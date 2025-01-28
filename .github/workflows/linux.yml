@@ -2,26 +2,15 @@ name: linux
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'nightly'
+    branches:
+      - stable-patched
 
 jobs:
   build:
-    permissions:
-      contents: write    # Required for creating/updating releases
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      - name: Increment version
-        id: version
-        run: |
-          version=$(grep "define NIGHTLY" source/LeLib/data.cpp | awk '{ print $3 }')
-          let version=${version}+1
-          sed -i "s/define NIGHTLY .*/define NIGHTLY $version/" source/LeLib/data.cpp
-          version=$(grep "define \(MAJOR\|FEATURE\|NIGHTLY\)" source/LeLib/data.cpp | awk '{ print $3 }' | xargs | sed 's/ /\./g')
-          echo "::set-output name=TRSE_VERSION::${version}"
 
       - name: Install dependencies
         run: |
@@ -79,15 +68,12 @@ jobs:
           qmake PREFIX=/usr TRSE.pro
           make -j 4 -k
 
-      - name: Build tar.gz
+      - name: Build package
         run: cd Publish/publish_linux && ./publish nightly
 
-      - name: Publish tar.gz
-        uses: ColinPitrat/update-release@master
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
-          release: nightly
-          message: Nightly build
-          body: TRSE ${{ steps.version.outputs.TRSE_VERSION }}
-          files: Publish/publish_linux/trse_linux64.tar.gz
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: trse-linux
+          path: Publish/publish_linux/trse_linux64.tar.gz
+          retention-days: 7

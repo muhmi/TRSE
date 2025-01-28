@@ -3,7 +3,6 @@
 
 bool OrgasmLine::m_inIFDEF = false;
 
-int patchpos = -1;
 
 void Orgasm::LoadFile(QString filename) {
     LoadCodes(m_cpuFlavor);
@@ -498,43 +497,16 @@ bool Orgasm::Assemble(QString filename, QString outFile)
         m_data.append((m_startAddress>>8)&0xFF);
         m_data.append((m_startAddress)&0xFF);
     }
-//m_data = QString("mankeli").toLocal8Bit();
 
-	if (patchpos >= 0)
-	{
-		int datasize = m_data.size() - patchpos - 4;
-
-		if (datasize == 0)
-			datasize = 0xFFFF;
-	
-		int val2 = datasize;
-	       	 m_data[patchpos+0] = val2&0xFF;
-	       	 m_data[patchpos+1] = (val2>>8)&0xFF;
-		patchpos = -1;
-
-	qDebug() << "reset patchpos2" << Qt::hex << patchpos;
-
-	        m_data.append((char)0);
-        	m_data.append((char)0);
-
-
-	}
-
-
-
-if (m_success) {
+    if (m_success) {
         QFile out(outFile);
         out.open(QFile::WriteOnly);
-
-	qDebug() << "writing output file" << outFile;
-//	qDebug() << m_data;
 
         out.write(m_data);
         out.close();
     }
     m_output = "Complete.";
-    qDebug() << Util::numToHex( m_data[0]) << Util::numToHex( m_data[1] )
-	    << Util::numToHex( m_data[2] ) << Util::numToHex( m_data[3] );
+//    qDebug() << Util::numToHex( m_data[0]) << Util::numToHex( m_data[1]);
 
     }
     catch (OrgasmError e) {
@@ -876,7 +848,6 @@ void Orgasm::ProcessLong24Data(OrgasmLine &ol)
     }
 }
 
-
 void Orgasm::ProcessOrgData(OrgasmLine &ol)
 {
     if (m_pCounter == 0) {
@@ -889,45 +860,16 @@ void Orgasm::ProcessOrgData(OrgasmLine &ol)
         int val = Util::NumberFromStringHex(Util::BinopString(washed));
         qDebug() << val;
 */
-#if 0
         if (m_cpuFlavor!=CPUFLAVOR_Z80) {
             m_data.append(val&0xFF);
             m_data.append((val>>8)&0xFF);
         }
-#endif
-//	m_data.append(0x66);
-
-	patchpos = m_data.size(); 
-	qDebug() << "setting patchpos1" << Qt::hex << patchpos << val;
-
-	int val2 = 0;
-        m_data.append(val2&0xFF);
-        m_data.append((val2>>8)&0xFF);
-
-
-	m_data.append(val&0xFF);
-        m_data.append((val>>8)&0xFF);
-
-//	m_data.append(0x67);
-
         m_pCounter = val;
         if (m_startAddress==-1)
             m_startAddress = m_pCounter;
         return;
     }
     else {
-	
-	int datasize = m_data.size() - patchpos - 4;
-	
-	if (datasize == 0)
-		datasize = 0xFFFF;
-	
-	int val2 = datasize;
-        m_data[patchpos+0] = val2&0xFF;
-        m_data[patchpos+1] = (val2>>8)&0xFF;
-	patchpos = -1;
-
-	qDebug() << "reset patchpos1" << Qt::hex << datasize;
 
 
         for (QString& s: m_symbols.keys())
@@ -945,29 +887,11 @@ void Orgasm::ProcessOrgData(OrgasmLine &ol)
 //            throw OrgasmError(e,ol);
         }
 
-#if 0
         while (m_pCounter<val) {
             m_pCounter++;
 //            m_data.append((uchar)0xff);
             m_data.append((uchar)0xff);
         }
-#endif
-	m_pCounter = val;
-
-//	m_data.append(0x68);
-	patchpos = m_data.size(); 
-	qDebug() << "setting patchpos2" << Qt::hex << patchpos << val;
-
-        m_data.append(val2&0xFF);
-        m_data.append((val2>>8)&0xFF);
-
- 	m_data.append(val&0xFF);
-        m_data.append((val>>8)&0xFF);
-
-
-//	m_data.append(0x69);
-
-
     }
 }
 

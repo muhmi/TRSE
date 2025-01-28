@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       # Ideally we would like to do it once for all builds,
       # but this is complicated as we want to allow to trigger a nightly by
       # pushing the tag, so this can't be in nightly.yml. One option would be to
@@ -25,13 +25,13 @@ jobs:
           sed -i "s/define NIGHTLY .*/define NIGHTLY $version/" source/LeLib/data.cpp
           version=$(grep "define \(MAJOR\|FEATURE\|NIGHTLY\)" source/LeLib/data.cpp | awk '{ print $3 }' | xargs | sed 's/ /\./g')
           echo "::set-output name=TRSE_VERSION::${version}"
-      - name: Commit & Push new version
-        uses: actions-js/push@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          author_name: "Nightly Build"
-          message: "Increment nightly version"
-          branch: master
+      #- name: Commit & Push new version
+      #  uses: actions-js/push@master
+      #  with:
+      #    github_token: ${{ secrets.GITHUB_TOKEN }}
+      #    author_name: "Nightly Build"
+      #    message: "Increment nightly version"
+      #    branch: master
 
       - run: |
           sudo apt-get update
@@ -107,30 +107,30 @@ jobs:
           qmake PREFIX=/usr TRSE.pro
           make -j 4 -k
 
-      - name: Build OK64
-        run: |
-          git clone https://github.com/leuat/OK64.git
-          pushd OK64
-          OK64dir=`pwd`
-          sudo apt-get install qtmultimedia5-dev
-          # Build resid
-          #wget --tries=3 http://www.zimmers.net/anonftp/pub/cbm/crossplatform/emulators/resid/resid-0.16.tar.gz
-          # www.zimmers.net seems to be very unstable around the time of the nightly (or some other problem) so
-          # we have our own copy of resid.
-          wget --tries=3 http://www.irio.co.uk/trse/resid-0.16.tar.gz
-          tar -xzf resid-0.16.tar.gz
-          pushd resid-0.16
-          ./configure --prefix=$OK64dir/resid
-          make
-          make install
-          popd
-          # Build OK64
-          pushd OK64
-          qmake INCLUDEPATH=$OK64dir/resid/include QMAKE_LFLAGS=-Wl,-L$OK64dir/resid/lib/ OK64.pro
-          make
-          popd
-          popd
-
+      #- name: Build OK64
+      #  run: |
+      #    git clone https://github.com/leuat/OK64.git
+      #    pushd OK64
+      #    OK64dir=`pwd`
+      #    sudo apt-get install qtmultimedia5-dev
+      #    # Build resid
+      #    #wget --tries=3 http://www.zimmers.net/anonftp/pub/cbm/crossplatform/emulators/resid/resid-0.16.tar.gz
+      #    # www.zimmers.net seems to be very unstable around the time of the nightly (or some other problem) so
+      #    # we have our own copy of resid.
+      #    wget --tries=3 http://www.irio.co.uk/trse/resid-0.16.tar.gz
+      #    tar -xzf resid-0.16.tar.gz
+      #    pushd resid-0.16
+      #    ./configure --prefix=$OK64dir/resid
+      #    make
+      #    make install
+      #    popd
+      #    # Build OK64
+      #    pushd OK64
+      #    qmake INCLUDEPATH=$OK64dir/resid/include QMAKE_LFLAGS=-Wl,-L$OK64dir/resid/lib/ OK64.pro
+      #    make
+      #    popd
+      #    popd
+#
       # Construct and publish the linux binary package
       - name: Build tar.gz
         run: cd Publish/publish_linux && ./publish nightly
@@ -144,24 +144,24 @@ jobs:
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify tutorials
-        run: |
-          mkdir bin
-          cp trse bin/
-          ln -s Publish/tutorials tutorials
-          ln -s Publish/source/themes themes
-          mkdir -p ~/.local/share/TRSE
-          cp Publish/publish_linux/trse.ini ~/.local/share/TRSE/
-          cd bin
-          # This is the default value but defining the var should avoid logs polluting the output
-          export XDG_RUNTIME_DIR=/tmp/runtime-runner
-          #xvfb-run --auto-servernum python3 ../Publish/verify_all/verify_all.py --trse `pwd`/trse --trse.ini ~/.local/share/TRSE/trse.ini
+      #- name: Verify tutorials
+      #  run: |
+      #    mkdir bin
+      #    cp trse bin/
+      #    ln -s Publish/tutorials tutorials
+      #    ln -s Publish/source/themes themes
+      #    mkdir -p ~/.local/share/TRSE
+      #    cp Publish/publish_linux/trse.ini ~/.local/share/TRSE/
+      #    cd bin
+      #    # This is the default value but defining the var should avoid logs polluting the output
+      #    export XDG_RUNTIME_DIR=/tmp/runtime-runner
+      #    #xvfb-run --auto-servernum python3 ../Publish/verify_all/verify_all.py --trse `pwd`/trse --trse.ini ~/.local/share/TRSE/trse.ini
 
-      - name: Build notification
-        if: failure()
-        uses: adamkdean/simple-slack-notify@master
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        with:
-          channel: #bugs
-          text: "[GitHub Actions Notification] Linux build failed: ${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}"
+      #- name: Build notification
+      #  if: failure()
+      #  uses: adamkdean/simple-slack-notify@master
+      #  env:
+      #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #  with:
+      #    channel: #bugs
+      #    text: "[GitHub Actions Notification] Linux build failed: ${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}"
